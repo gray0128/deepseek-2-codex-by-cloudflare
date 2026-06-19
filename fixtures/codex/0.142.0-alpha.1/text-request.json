@@ -1,0 +1,29 @@
+{
+  "model": "synthetic-codex",
+  "client_metadata": {
+    "session_id": "session_synthetic",
+    "thread_id": "thread_synthetic",
+    "turn_id": "turn_synthetic"
+  },
+  "instructions": "Synthetic Codex instructions for protocol fixture.",
+  "input": [
+    {
+      "type": "message",
+      "role": "developer",
+      "content": [{ "type": "input_text", "text": "Synthetic developer context." }]
+    },
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "Reply with exactly: hello" }]
+    }
+  ],
+  "tools": [],
+  "tool_choice": "auto",
+  "parallel_tool_calls": false,
+  "reasoning": null,
+  "prompt_cache_key": "prompt_cache_synthetic",
+  "store": false,
+  "stream": true,
+  "include": []
+}

@@ -200,7 +200,10 @@ Codex 只使用别名 `deepseek-codex`。`model-policy.ts` 根据能力探测结
 | `high` | `enabled` | `high` |
 | `xhigh` | `enabled` | `max` |
 
-真实模型来自 `UPSTREAM_TEXT_MODEL` 与 `UPSTREAM_REASONING_MODEL`。Phase -1 必须证明对应组合可用；否则启动失败，而不是运行时静默降级。
+真实模型来自 `UPSTREAM_TEXT_MODEL` 与 `UPSTREAM_REASONING_MODEL`，只能使用 capability fixture 已验证的组合；否则启动失败，而不是运行时静默降级。
+
+Phase -1 已证明两个配置默认都可使用 `deepseek-v4-flash`，并允许显式配置
+`deepseek-v4-pro`。旧的 `deepseek-chat` / `deepseek-reasoner` 不进入白名单。
 
 首次 stateful 回合把真实模型写入 conversation meta。后续回合必须使用同一模型；客户端改变 model 或 effort 导致跨模型切换时返回 409。是否放宽只能由新的兼容性 fixture 驱动。
 
@@ -326,8 +329,9 @@ Phase -1 必须冻结 Codex 的历史模式：
 builder 只接受 `NormalizedTurn + BeginTurnResult + ModelDecision`：
 
 - tools 映射为 `{type:"function", function:{name,description,parameters}}`；
-- `strict` 和 beta base URL 只有 capability fixture 通过后才启用；
-- `parallel_tool_calls` 不支持时返回 400，不静默串行化；
+- non-thinking 支持 `tool_choice=auto/required/none`；thinking + tools 只允许 `auto`，收到 `required` 时返回 400；
+- `strict=true` 必须路由到 beta base URL；standard endpoint 会接受不支持的 schema，但不执行等价的严格校验；
+- `parallel_tool_calls` 已验证可返回两个 tool calls，适配器保持上游 index/call id，不静默串行化；
 - thinking 工具回合必须把之前 assistant message 的 `reasoning_content` 原样放回；
 - 不带工具的旧 reasoning 不主动放回，除非端点 fixture 要求；
 - 不允许 request builder 访问原始 HTTP body。
@@ -537,15 +541,15 @@ Wrangler 必须固定 compatibility date、启用 request signal flag、声明 S
 
 以下事项在对应 issue 合并前必须由 fixture 给出结论：
 
-| 门禁 | 阻塞范围 |
-|---|---|
-| Codex 是否总是 `stream=true` | MVP-A |
-| Codex 需要的最小 SSE 字段和 sequence number | MVP-A |
-| Codex 全量历史还是增量 input | stateful planner |
-| DeepSeek 模型与 thinking 开关组合 | model policy |
-| `tool_choice`、parallel、strict 的端点支持 | MVP-B |
-| Codex 是否必须看到 reasoning item | MVP-C presenter |
-| incoming request signal 的部署行为 | 取消传播 |
+| 门禁 | 结论 | 阻塞范围 |
+|---|---|---|
+| Codex 是否总是 `stream=true` | 0.142.0-alpha.1 fixture：是 | MVP-A |
+| Codex 需要的最小 SSE 字段和 sequence number | 文本 fixture 已被真实客户端消费 | MVP-A |
+| Codex 全量历史还是增量 input | 工具子回合重发全量 input，不发送 `previous_response_id` | stateful planner |
+| DeepSeek 模型与 thinking 开关组合 | 两个 V4 模型、disabled/high/max 均通过 | model policy |
+| `tool_choice`、parallel、strict 的端点支持 | non-thinking 三值通过；thinking 仅 auto；parallel 通过；strict 强制 beta | MVP-B |
+| Codex 是否必须看到 reasoning item | 纯文本不依赖；合成 encrypted reasoning item 可被消费 | MVP-C presenter |
+| incoming request signal 的部署行为 | 配置已启用，真实断连传播留在 T04 验收 | 取消传播 |
 
 门禁未关闭时，对应能力不得以猜测实现或静默降级。
 

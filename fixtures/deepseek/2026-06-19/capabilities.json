@@ -1,0 +1,156 @@
+{
+  "observed_at": "2026-06-19T09:01:50.031Z",
+  "base_url": "https://api.deepseek.com",
+  "status": "endpoint_probe_complete",
+  "list_models": {
+    "http_status": 200,
+    "models": ["deepseek-v4-flash", "deepseek-v4-pro"]
+  },
+  "probes": [
+    {
+      "case": "thinking_disabled",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "stop",
+      "content_present": true,
+      "reasoning_content_present": false,
+      "tool_call_count": 0
+    },
+    {
+      "case": "thinking_enabled_high",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "stop",
+      "content_present": true,
+      "reasoning_content_present": true,
+      "tool_call_count": 0
+    },
+    {
+      "case": "thinking_enabled_max",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "stop",
+      "content_present": true,
+      "reasoning_content_present": true,
+      "tool_call_count": 0
+    },
+    {
+      "case": "v4_pro",
+      "http_status": 200,
+      "model": "deepseek-v4-pro",
+      "finish_reason": "stop",
+      "content_present": true,
+      "reasoning_content_present": false,
+      "tool_call_count": 0
+    },
+    {
+      "case": "tool_choice_auto",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "tool_calls",
+      "content_present": false,
+      "reasoning_content_present": false,
+      "tool_call_count": 1,
+      "tool_names": ["get_synthetic_value"]
+    },
+    {
+      "case": "tool_choice_required",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "tool_calls",
+      "content_present": false,
+      "reasoning_content_present": false,
+      "tool_call_count": 1,
+      "tool_names": ["get_synthetic_value"]
+    },
+    {
+      "case": "tool_choice_none",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "stop",
+      "content_present": true,
+      "reasoning_content_present": false,
+      "tool_call_count": 0
+    },
+    {
+      "case": "thinking_tool_choice_required",
+      "http_status": 400,
+      "error": {
+        "code": "invalid_request_error",
+        "type": "invalid_request_error"
+      }
+    },
+    {
+      "case": "parallel_tools",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "tool_calls",
+      "content_present": false,
+      "reasoning_content_present": false,
+      "tool_call_count": 2,
+      "tool_names": ["get_synthetic_value", "get_second_synthetic_value"]
+    },
+    {
+      "case": "strict_standard_endpoint",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "tool_calls",
+      "tool_call_count": 1
+    },
+    {
+      "case": "strict_beta_endpoint",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "tool_calls",
+      "tool_call_count": 1
+    },
+    {
+      "case": "strict_unsupported_schema_standard",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "tool_calls",
+      "tool_call_count": 1
+    },
+    {
+      "case": "strict_unsupported_schema_beta",
+      "http_status": 400,
+      "error": {
+        "code": "invalid_request_error",
+        "type": "invalid_request_error"
+      }
+    },
+    {
+      "case": "thinking_with_tools_first",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "tool_calls",
+      "content_present": false,
+      "reasoning_content_present": true,
+      "tool_call_count": 1,
+      "tool_names": ["get_synthetic_value"]
+    },
+    {
+      "case": "thinking_with_tools_continuation",
+      "http_status": 200,
+      "model": "deepseek-v4-flash",
+      "finish_reason": "stop",
+      "content_present": true,
+      "reasoning_content_present": true,
+      "tool_call_count": 0
+    }
+  ],
+  "conclusions": {
+    "default_model": "deepseek-v4-flash",
+    "thinking_efforts": ["high", "max"],
+    "non_thinking_tool_choice": ["auto", "required", "none"],
+    "thinking_tool_choice": ["auto"],
+    "parallel_tool_calls": true,
+    "strict_validation_endpoint": "https://api.deepseek.com/beta",
+    "thinking_tool_continuation_requires_reasoning_content": true
+  },
+  "sources": [
+    "https://api-docs.deepseek.com/quick_start/pricing",
+    "https://api-docs.deepseek.com/guides/thinking_mode",
+    "https://api-docs.deepseek.com/guides/tool_calls"
+  ]
+}
