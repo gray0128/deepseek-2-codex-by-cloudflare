@@ -1,0 +1,34 @@
+{
+  "name": "deepseek-2-codex-by-cloudflare",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:dry-run": "wrangler deploy --dry-run --outdir .wrangler/dist",
+    "types": "wrangler types",
+    "types:check": "wrangler types --check",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test vitest.config.ts",
+    "format": "prettier --write src test vitest.config.ts package.json tsconfig.json wrangler.jsonc .github/workflows/ci.yml",
+    "format:check": "prettier --check src test vitest.config.ts package.json tsconfig.json wrangler.jsonc .github/workflows/ci.yml",
+    "test": "npm run test:probe && npm run test:worker",
+    "test:probe": "node --test probes/hello-worker/worker.test.mjs",
+    "test:worker": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run types:check && npm run typecheck && npm run lint && npm run format:check && npm test && npm run deploy:dry-run"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.16.17",
+    "eslint": "9.39.4",
+    "prettier": "3.8.4",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.61.1",
+    "vitest": "4.1.9",
+    "wrangler": "4.102.0"
+  }
+}
