@@ -6,11 +6,13 @@ export const MAX_TOOLS = 64;
 export type RuntimeEnv = Env & {
   ADAPTER_BEARER_TOKEN: string;
   DEEPSEEK_API_KEY: string;
+  RESPONSE_ID_SECRET: string;
 };
 
 const configSchema = z.object({
   ADAPTER_BEARER_TOKEN: z.string().min(16),
   DEEPSEEK_API_KEY: z.string().min(1),
+  RESPONSE_ID_SECRET: z.string().min(16),
   MODEL_ALIAS: z.string().min(1),
   UPSTREAM_BASE_URL: z.url(),
   UPSTREAM_TEXT_MODEL: z.enum(["deepseek-v4-flash", "deepseek-v4-pro"]),

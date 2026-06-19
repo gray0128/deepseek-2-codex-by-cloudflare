@@ -1,4 +1,5 @@
 export { route } from "./http/router";
+export { Conversation } from "./state/conversation";
 import { route } from "./http/router";
 import type { RuntimeEnv } from "./config";
 

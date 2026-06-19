@@ -15,6 +15,10 @@
     "CHUNK_IDLE_TIMEOUT_MS": 30000,
     "TOTAL_TIMEOUT_MS": 120000,
   },
+  "durable_objects": {
+    "bindings": [{ "name": "CONVERSATIONS", "class_name": "Conversation" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Conversation"] }],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,

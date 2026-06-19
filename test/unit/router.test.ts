@@ -5,6 +5,7 @@ import { route, type SafeLogRecord } from "../../src/http/router";
 const env = {
   ADAPTER_BEARER_TOKEN: "adapter-token-long-enough",
   DEEPSEEK_API_KEY: "upstream-secret",
+  RESPONSE_ID_SECRET: "response-id-secret-long-enough",
   MODEL_ALIAS: "deepseek-codex",
   UPSTREAM_BASE_URL: "https://api.deepseek.com",
   UPSTREAM_TEXT_MODEL: "deepseek-v4-flash",
