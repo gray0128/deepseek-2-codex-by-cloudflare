@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../../src/config";
 import { route, type SafeLogRecord } from "../../src/http/router";
 
@@ -32,6 +32,16 @@ async function errorCode(response: Response): Promise<string> {
   const body = (await response.json()) as { error: { code: string } };
   return body.error.code;
 }
+
+beforeEach(() => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(
+      async () =>
+        new Response('data: {"choices":[{"delta":{"content":"hello"}}]}\n\ndata: [DONE]\n\n'),
+    ),
+  );
+});
 
 describe("route", () => {
   it("serves health without an environment", async () => {
@@ -112,8 +122,8 @@ describe("route", () => {
       env,
       () => {},
     );
-    expect(response.status).toBe(501);
-    expect(await errorCode(response)).toBe("stream_adapter_not_implemented");
+    expect(response.status).toBe(200);
+    expect(await response.text()).toContain("response.completed");
   });
 
   it("rejects a model outside the configured alias", async () => {
@@ -138,6 +148,6 @@ describe("route", () => {
     expect(log).not.toContain(secretBody);
     expect(log).not.toContain(env.ADAPTER_BEARER_TOKEN);
     expect(log).not.toContain(env.DEEPSEEK_API_KEY);
-    expect(records[0]).toMatchObject({ path: "/v1/responses", status: 501 });
+    expect(records[0]).toMatchObject({ path: "/v1/responses", status: 200 });
   });
 });

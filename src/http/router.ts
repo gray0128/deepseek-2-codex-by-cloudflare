@@ -1,9 +1,11 @@
 import { ZodError } from "zod";
 import { loadConfig, type RuntimeEnv } from "../config";
 import { decideModel } from "../deepseek/model-policy";
+import { openDeepSeekStream, UpstreamFailure } from "../deepseek/client";
 import { buildDeepSeekRequest } from "../deepseek/request-builder";
 import { normalizeRequest } from "../responses/normalize";
 import { responsesRequestSchema } from "../responses/schema";
+import { responsesStream } from "../stream/responses-stream";
 import { hasValidBearerToken } from "./auth";
 import { AdapterError, errorResponse } from "./errors";
 
@@ -75,7 +77,7 @@ async function requireAuth(request: Request, token: string): Promise<void> {
   }
 }
 
-async function handleResponses(request: Request, env: RuntimeEnv): Promise<Response> {
+async function handleResponses(request: Request, env: RuntimeEnv, id: string): Promise<Response> {
   const config = loadConfig(env);
   const length = request.headers.get("content-length");
   if (length && /^\d+$/.test(length) && Number(length) > config.REQUEST_MAX_BYTES) {
@@ -103,13 +105,35 @@ async function handleResponses(request: Request, env: RuntimeEnv): Promise<Respo
   }
   const turn = await normalizeRequest(parsed, config.MESSAGE_MAX_BYTES);
   const decision = decideModel(turn, config);
-  buildDeepSeekRequest(turn, decision);
+  const upstreamRequest = buildDeepSeekRequest(turn, decision);
+  let upstream: ReadableStream<Uint8Array>;
+  try {
+    upstream = await openDeepSeekStream({
+      config,
+      apiKey: config.DEEPSEEK_API_KEY,
+      body: upstreamRequest,
+      incomingSignal: request.signal,
+    });
+  } catch (error) {
+    if (!(error instanceof UpstreamFailure)) throw error;
+    const status =
+      error.kind === "upstream_rate_limited"
+        ? 429
+        : error.kind === "client_aborted"
+          ? 499
+          : error.kind === "first_byte_timeout" || error.kind === "total_timeout"
+            ? 504
+            : 502;
+    throw new AdapterError(status, error.kind, error.message, "upstream_error");
+  }
 
-  throw new AdapterError(
-    501,
-    "stream_adapter_not_implemented",
-    "Responses stream translation is not implemented yet.",
-  );
+  return new Response(responsesStream(upstream, config.MODEL_ALIAS), {
+    headers: {
+      "cache-control": "no-cache, no-transform",
+      "content-type": "text/event-stream; charset=utf-8",
+      "x-request-id": id,
+    },
+  });
 }
 
 export async function route(
@@ -136,13 +160,13 @@ export async function route(
             id: config.MODEL_ALIAS,
             object: "model",
             owned_by: "deepseek-cloudflare-adapter",
-            capabilities: { responses: true, streaming: false, tools: false },
+            capabilities: { responses: true, streaming: true, tools: false },
           },
         ],
       });
     } else if (request.method === "POST" && url.pathname === "/v1/responses") {
       if (!env) throw new Error("Runtime environment is required.");
-      response = await handleResponses(request, env);
+      response = await handleResponses(request, env, id);
     } else {
       throw new AdapterError(404, "not_found", "Route not found.");
     }
