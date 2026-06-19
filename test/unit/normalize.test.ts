@@ -12,7 +12,6 @@ describe("Responses normalization", () => {
         { type: "message", role: "user", content: "run a tool" },
         {
           type: "function_call",
-          id: "fc_1",
           call_id: "call_1",
           name: "exec_command",
           arguments: '{"cmd":"printf synthetic-tool-output"}',

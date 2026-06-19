@@ -18,7 +18,7 @@ const messageSchema = z
 const functionCallSchema = z
   .object({
     type: z.literal("function_call"),
-    id: z.string().min(1),
+    id: z.string().min(1).optional(),
     call_id: z.string().min(1),
     name: z.string().min(1),
     arguments: z.string(),
