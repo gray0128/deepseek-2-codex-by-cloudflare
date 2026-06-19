@@ -1,3 +1,5 @@
+import { runCapabilities } from "./capabilities.mjs";
+
 const encoder = new TextEncoder();
 
 function jsonError(status, code, message) {
@@ -195,11 +197,18 @@ export default {
     if (request.method === "GET" && url.pathname === "/healthz") {
       return Response.json({ status: "ok", probe: "t00-hello" });
     }
-    if (request.method !== "POST" || url.pathname !== "/v1/responses") {
+    const isResponses = request.method === "POST" && url.pathname === "/v1/responses";
+    const isCapabilitiesProbe =
+      request.method === "POST" && url.pathname === "/probe/capabilities";
+    if (!isResponses && !isCapabilitiesProbe) {
       return jsonError(404, "not_found", "Route not found.");
     }
     if (!(await authorized(request, env.PROBE_CLIENT_TOKEN))) {
       return jsonError(401, "invalid_api_key", "Invalid probe API key.");
+    }
+    if (isCapabilitiesProbe) {
+      const capabilities = await runCapabilities(env.DEEPSEEK_API_KEY, request.signal);
+      return Response.json(capabilities);
     }
     if (!request.headers.get("content-type")?.includes("application/json")) {
       return jsonError(415, "unsupported_media_type", "Expected application/json.");

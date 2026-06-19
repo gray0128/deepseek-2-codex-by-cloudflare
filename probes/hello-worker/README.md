@@ -16,3 +16,7 @@ curl https://deepseek-codex-t00-hello.<subdomain>.workers.dev/healthz
 部署后，将 `PROBE_CLIENT_TOKEN` 放入本地临时环境变量，并在 Codex 自定义 provider
 中用 `env_key` 引用；base URL 指向 Worker 的 `/v1`。验收完成后删除 Worker 和两个
 secret，不能将本探针保留为公共服务。
+
+`POST /probe/capabilities` 使用相同 probe token 执行 T00 DeepSeek 能力矩阵。响应只含
+状态码、模型名和字段存在性；它不会返回模型 content、reasoning、错误正文或 secret。
+该路由只用于 discovery，T00 验收后必须随 Worker 一起删除。

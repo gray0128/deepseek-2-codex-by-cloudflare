@@ -101,6 +101,34 @@ check(
 );
 check(reasoningRequest.parallel_tool_calls === true, "reasoning request must enable parallel tools");
 
+const capabilities = JSON.parse(
+  await readFile(join(fixtureRoot, "deepseek", "2026-06-19", "capabilities.json"), "utf8"),
+);
+const capabilityByCase = new Map(capabilities.probes.map((probe) => [probe.case, probe]));
+check(capabilities.status === "endpoint_probe_complete", "DeepSeek endpoint probe is incomplete");
+check(
+  capabilities.list_models?.models.includes("deepseek-v4-flash") &&
+    capabilities.list_models?.models.includes("deepseek-v4-pro"),
+  "DeepSeek V4 model list is incomplete",
+);
+check(
+  capabilityByCase.get("parallel_tools")?.tool_call_count === 2,
+  "parallel tool capability is not proven",
+);
+check(
+  capabilityByCase.get("thinking_tool_choice_required")?.http_status === 400,
+  "thinking tool_choice=required rejection is not recorded",
+);
+check(
+  capabilityByCase.get("thinking_with_tools_continuation")?.http_status === 200,
+  "thinking tool continuation is not proven",
+);
+check(
+  capabilityByCase.get("strict_unsupported_schema_standard")?.http_status === 200 &&
+    capabilityByCase.get("strict_unsupported_schema_beta")?.http_status === 400,
+  "strict endpoint behavior is not proven",
+);
+
 if (failures.length > 0) {
   console.error(failures.map((failure) => `- ${failure}`).join("\n"));
   process.exitCode = 1;
