@@ -1,17 +1,9 @@
-export function route(request: Request): Response {
-  const url = new URL(request.url);
-  if (request.method === "GET" && url.pathname === "/healthz") {
-    return Response.json({ status: "ok" });
-  }
-
-  return Response.json(
-    { error: { type: "invalid_request_error", code: "not_found", message: "Route not found." } },
-    { status: 404 },
-  );
-}
+export { route } from "./http/router";
+import { route } from "./http/router";
+import type { RuntimeEnv } from "./config";
 
 export default {
-  fetch(request) {
-    return route(request);
+  fetch(request, env) {
+    return route(request, env as RuntimeEnv);
   },
 } satisfies ExportedHandler<Env>;

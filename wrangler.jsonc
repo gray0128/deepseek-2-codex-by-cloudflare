@@ -4,6 +4,17 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-06-19",
   "compatibility_flags": ["enable_request_signal", "request_signal_passthrough"],
+  "vars": {
+    "MODEL_ALIAS": "deepseek-codex",
+    "UPSTREAM_BASE_URL": "https://api.deepseek.com",
+    "UPSTREAM_TEXT_MODEL": "deepseek-v4-flash",
+    "UPSTREAM_REASONING_MODEL": "deepseek-v4-flash",
+    "REQUEST_MAX_BYTES": 1048576,
+    "MESSAGE_MAX_BYTES": 262144,
+    "FIRST_BYTE_TIMEOUT_MS": 10000,
+    "CHUNK_IDLE_TIMEOUT_MS": 30000,
+    "TOTAL_TIMEOUT_MS": 120000,
+  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
