@@ -5,7 +5,8 @@
 - Worker：`deepseek-codex-adapter`
 - URL：`https://deepseek-codex-adapter.amd2.workers.dev`
 - 模型别名：`deepseek-codex`
-- 当前部署版本：`95e3b933-a0f6-4b11-b931-7d52cebfc070`
+- 当前生产版本：`756686fe-5a8c-4a5d-8233-2ecd809d1ec3`（secret 轮换生成）
+- 对应代码部署版本：`95e3b933-a0f6-4b11-b931-7d52cebfc070`
 - Secrets：`DEEPSEEK_API_KEY`、`ADAPTER_BEARER_TOKEN`、`RESPONSE_ID_SECRET`
 
 两个 secret 都只通过 `wrangler secret put` 写入，不放入配置、日志或仓库。
