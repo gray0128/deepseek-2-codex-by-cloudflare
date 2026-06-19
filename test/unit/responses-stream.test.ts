@@ -152,4 +152,26 @@ describe("Responses text stream", () => {
       ).text(),
     ).rejects.toThrow();
   });
+
+  it("does not expose DeepSeek reasoning_content as output text", async () => {
+    const resultText = await new Response(
+      responsesStream(
+        chunked(
+          [
+            'data: {"choices":[{"delta":{"reasoning_content":"SECRET_REASONING"}}]}',
+            "",
+            'data: {"choices":[{"delta":{"content":"hello"}}]}',
+            "",
+            "data: [DONE]",
+            "",
+            "",
+          ].join("\n"),
+          [5, 2, 1],
+        ),
+        "deepseek-codex",
+      ),
+    ).text();
+    expect(resultText).toContain('"delta":"hello"');
+    expect(resultText).not.toContain("SECRET_REASONING");
+  });
 });
