@@ -1,0 +1,24 @@
+{
+  "model": "gpt-5.4",
+  "client_metadata": {
+    "session_id": "session_synthetic",
+    "thread_id": "thread_synthetic",
+    "turn_id": "turn_synthetic"
+  },
+  "instructions": "Synthetic Codex instructions for reasoning fixture.",
+  "input": [
+    {
+      "type": "message",
+      "role": "user",
+      "content": [{ "type": "input_text", "text": "Reason briefly, then reply with exactly: hello" }]
+    }
+  ],
+  "tools": [],
+  "tool_choice": "auto",
+  "parallel_tool_calls": true,
+  "reasoning": { "effort": "high" },
+  "prompt_cache_key": "prompt_cache_synthetic",
+  "store": false,
+  "stream": true,
+  "include": ["reasoning.encrypted_content"]
+}

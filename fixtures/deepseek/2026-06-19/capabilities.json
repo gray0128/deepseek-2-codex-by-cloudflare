@@ -1,0 +1,43 @@
+{
+  "observed_at": "2026-06-19",
+  "base_url": "https://api.deepseek.com",
+  "status": "endpoint_probe_pending",
+  "reason": "A dedicated DeepSeek API key has not yet been authorized for this probe.",
+  "documentation_baseline": {
+    "models": ["deepseek-v4-flash", "deepseek-v4-pro"],
+    "legacy_aliases": {
+      "deepseek-chat": "deepseek-v4-flash with thinking disabled",
+      "deepseek-reasoner": "deepseek-v4-flash with thinking enabled",
+      "deprecated_after": "2026-07-24T15:59:00Z"
+    },
+    "thinking": {
+      "default": "enabled",
+      "toggle_values": ["enabled", "disabled"],
+      "effort_values": ["high", "max"],
+      "low_medium_mapping": "high",
+      "xhigh_mapping": "max"
+    },
+    "tools": {
+      "thinking_mode": true,
+      "strict": "beta_endpoint_only"
+    }
+  },
+  "endpoint_probes": [
+    { "case": "list_models", "status": "pending" },
+    { "case": "thinking_disabled", "status": "pending" },
+    { "case": "thinking_enabled_high", "status": "pending" },
+    { "case": "thinking_enabled_max", "status": "pending" },
+    { "case": "tool_choice_auto", "status": "pending" },
+    { "case": "tool_choice_required", "status": "pending" },
+    { "case": "single_tool", "status": "pending" },
+    { "case": "parallel_tools", "status": "pending" },
+    { "case": "strict_standard_endpoint", "status": "pending" },
+    { "case": "strict_beta_endpoint", "status": "pending" },
+    { "case": "thinking_with_tools", "status": "pending" }
+  ],
+  "sources": [
+    "https://api-docs.deepseek.com/quick_start/pricing",
+    "https://api-docs.deepseek.com/guides/thinking_mode",
+    "https://api-docs.deepseek.com/guides/tool_calls"
+  ]
+}

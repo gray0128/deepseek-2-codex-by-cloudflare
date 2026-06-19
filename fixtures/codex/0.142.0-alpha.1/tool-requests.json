@@ -1,0 +1,80 @@
+[
+  {
+    "model": "synthetic-codex",
+    "client_metadata": {
+      "session_id": "session_synthetic",
+      "thread_id": "thread_synthetic",
+      "turn_id": "turn_synthetic_1"
+    },
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [{ "type": "input_text", "text": "Use the shell once, then reply with exactly: hello" }]
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "name": "exec_command",
+        "description": "Run one synthetic command.",
+        "parameters": {
+          "type": "object",
+          "properties": { "cmd": { "type": "string" } },
+          "required": ["cmd"],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "parallel_tool_calls": false,
+    "prompt_cache_key": "prompt_cache_synthetic",
+    "store": false,
+    "stream": true
+  },
+  {
+    "model": "synthetic-codex",
+    "client_metadata": {
+      "session_id": "session_synthetic",
+      "thread_id": "thread_synthetic",
+      "turn_id": "turn_synthetic_2"
+    },
+    "input": [
+      {
+        "type": "message",
+        "role": "user",
+        "content": [{ "type": "input_text", "text": "Use the shell once, then reply with exactly: hello" }]
+      },
+      {
+        "type": "function_call",
+        "id": "fc_synthetic",
+        "call_id": "call_synthetic",
+        "name": "exec_command",
+        "arguments": "{\"cmd\":\"printf synthetic-tool-output\"}"
+      },
+      {
+        "type": "function_call_output",
+        "call_id": "call_synthetic",
+        "output": "Process exited with code 0\nOutput:\nsynthetic-tool-output"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "name": "exec_command",
+        "description": "Run one synthetic command.",
+        "parameters": {
+          "type": "object",
+          "properties": { "cmd": { "type": "string" } },
+          "required": ["cmd"],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "tool_choice": "auto",
+    "parallel_tool_calls": false,
+    "prompt_cache_key": "prompt_cache_synthetic",
+    "store": false,
+    "stream": true
+  }
+]
