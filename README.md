@@ -2,12 +2,31 @@
 
 使用 Cloudflare Worker 将 Codex Responses API 请求适配到 DeepSeek Chat Completions。
 
-当前仓库处于方案与任务准备阶段，尚不包含可部署实现。目标范围、技术实现和任务进度分别由以下文档管理：
+当前仓库已建立 Cloudflare Worker 与测试基线；Responses 协议实现从 T02 开始。目标范围、技术实现和任务进度分别由以下文档管理：
 
 - [最终实施方案](./docs/最终方案.md)：项目范围、阶段和关键决策；
 - [MVP-C 技术设计](./docs/MVP-C技术设计.md)：模块、接口、状态机、数据模型和测试方案；
 - [开发路线图与 Issue 索引](./docs/开发路线图.md)：任务依赖、验收标准和 GitHub issues；
 - [历史方案与评审归档](./docs/archive/)：只用于追溯，不作为实现依据。
+
+## 本地开发
+
+要求 Node.js 22+。安装锁定依赖并运行全部门禁：
+
+```sh
+npm ci
+npm run check
+```
+
+启动本地 Worker：
+
+```sh
+npm run dev
+curl http://127.0.0.1:8787/healthz
+```
+
+当前生产入口只提供 `/healthz` 和结构化 404；鉴权、Responses schema 与 DeepSeek
+client 属于后续 issue，不在脚手架中放置占位实现。
 
 ## 开发进度
 
