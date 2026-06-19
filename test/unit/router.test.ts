@@ -127,7 +127,8 @@ describe("route", () => {
     expect(await response.text()).toContain("response.completed");
   });
 
-  it("rejects parallel tool calls until MVP-B proves the mapping", async () => {
+  it("accepts parallel tool declarations after MVP-B mapping", async () => {
+    const upstream = vi.mocked(fetch);
     const response = await route(
       responsesRequest({
         model: "deepseek-codex",
@@ -140,8 +141,11 @@ describe("route", () => {
       env,
       () => {},
     );
-    expect(response.status).toBe(400);
-    expect(await errorCode(response)).toBe("invalid_request");
+    expect(response.status).toBe(200);
+    const body = JSON.parse(upstream.mock.calls.at(-1)![1]!.body as string) as {
+      parallel_tool_calls: boolean;
+    };
+    expect(body.parallel_tool_calls).toBe(true);
   });
 
   it("accepts inactive non-function tool declarations without forwarding them", async () => {
@@ -162,8 +166,12 @@ describe("route", () => {
       () => {},
     );
     expect(response.status).toBe(200);
-    const body = JSON.parse(upstream.mock.calls.at(-1)![1]!.body as string) as { tools: unknown[] };
+    const body = JSON.parse(upstream.mock.calls.at(-1)![1]!.body as string) as {
+      tools: unknown[];
+      parallel_tool_calls: boolean;
+    };
     expect(body.tools).toHaveLength(1);
+    expect(body.parallel_tool_calls).toBe(false);
     expect(body.tools[0]).toMatchObject({ type: "function", function: { name: "lookup" } });
   });
 

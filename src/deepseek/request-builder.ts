@@ -24,7 +24,7 @@ export function buildDeepSeekRequest(
             },
           })),
           tool_choice: "auto" as const,
-          parallel_tool_calls: false as const,
+          parallel_tool_calls: turn.parallelToolCalls,
         }
       : {}),
   };

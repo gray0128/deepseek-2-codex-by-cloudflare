@@ -20,6 +20,15 @@ interface ParsedChunk {
   usage?: DeepSeekUsage;
 }
 
+interface ToolState {
+  outputIndex: number;
+  itemId: string;
+  callId: string;
+  name: string;
+  arguments: string;
+  item: Record<string, unknown>;
+}
+
 function eventBytes(event: Record<string, unknown>): Uint8Array {
   return encoder.encode(
     "event: " + String(event.type) + "\ndata: " + JSON.stringify(event) + "\n\n",
@@ -115,16 +124,15 @@ export function responsesStream(
   let buffer = "";
   let sawDone = false;
   let usage: DeepSeekUsage | undefined;
+  let mode: "text" | "tools" | undefined;
   let outputItem: Record<string, unknown> | undefined;
+  const toolStates = new Map<number, ToolState>();
   let text = "";
-  let toolArguments = "";
-  let toolItemId = "";
-  let toolCallId = "";
-  let toolName = "";
   const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false });
 
   function addText(controller: TransformStreamDefaultController<Uint8Array>, delta: string): void {
-    if (!outputItem) {
+    if (!mode) {
+      mode = "text";
       const messageId = "msg_" + crypto.randomUUID().replaceAll("-", "");
       outputItem = {
         id: messageId,
@@ -152,7 +160,7 @@ export function responsesStream(
         }),
       );
     }
-    if (outputItem.type !== "message") throw new Error("DeepSeek mixed text and tool calls.");
+    if (mode !== "text" || !outputItem) throw new Error("DeepSeek mixed text and tool calls.");
     text += delta;
     controller.enqueue(
       eventBytes({
@@ -170,43 +178,50 @@ export function responsesStream(
     controller: TransformStreamDefaultController<Uint8Array>,
     tool: DeepSeekToolDelta,
   ): void {
-    if ((tool.index ?? 0) !== 0) throw new Error("Parallel tool calls are not supported.");
-    if (!outputItem) {
-      toolItemId = "fc_" + crypto.randomUUID().replaceAll("-", "");
-      toolCallId = tool.id ?? "call_" + crypto.randomUUID().replaceAll("-", "");
-      toolName = tool.function?.name ?? "";
-      if (!toolName) throw new Error("DeepSeek tool call is missing a name.");
-      outputItem = {
-        id: toolItemId,
+    if (!mode) mode = "tools";
+    if (mode !== "tools") throw new Error("DeepSeek mixed text and tool calls.");
+    const outputIndex = tool.index ?? 0;
+    if (!Number.isInteger(outputIndex) || outputIndex < 0) {
+      throw new Error("DeepSeek sent invalid tool index.");
+    }
+    let state = toolStates.get(outputIndex);
+    if (!state) {
+      const itemId = "fc_" + crypto.randomUUID().replaceAll("-", "");
+      const callId = tool.id ?? "call_" + crypto.randomUUID().replaceAll("-", "");
+      const name = tool.function?.name ?? "";
+      if (!name) throw new Error("DeepSeek tool call is missing a name.");
+      const item = {
+        id: itemId,
         type: "function_call",
         status: "in_progress",
         arguments: "",
-        call_id: toolCallId,
-        name: toolName,
+        call_id: callId,
+        name,
       };
+      state = { outputIndex, itemId, callId, name, arguments: "", item };
+      toolStates.set(outputIndex, state);
       controller.enqueue(
         eventBytes({
           type: "response.output_item.added",
           sequence_number: sequence++,
-          output_index: 0,
-          item: outputItem,
+          output_index: outputIndex,
+          item,
         }),
       );
     }
-    if (outputItem.type !== "function_call") throw new Error("DeepSeek mixed text and tool calls.");
-    if (tool.id && tool.id !== toolCallId) throw new Error("DeepSeek changed tool call id.");
-    if (tool.function?.name && tool.function.name !== toolName) {
+    if (tool.id && tool.id !== state.callId) throw new Error("DeepSeek changed tool call id.");
+    if (tool.function?.name && tool.function.name !== state.name) {
       throw new Error("DeepSeek changed tool name.");
     }
     const delta = tool.function?.arguments ?? "";
     if (!delta) return;
-    toolArguments += delta;
+    state.arguments += delta;
     controller.enqueue(
       eventBytes({
         type: "response.function_call_arguments.delta",
         sequence_number: sequence++,
-        item_id: toolItemId,
-        output_index: 0,
+        item_id: state.itemId,
+        output_index: outputIndex,
         delta,
       }),
     );
@@ -246,12 +261,14 @@ export function responsesStream(
         buffer += decoder.decode();
         if (buffer.trim()) throw new Error("DeepSeek stream ended with an incomplete SSE event.");
         if (!sawDone) throw new Error("DeepSeek stream ended before [DONE].");
-        if (!outputItem) throw new Error("DeepSeek stream ended without output.");
+        if (!mode) throw new Error("DeepSeek stream ended without output.");
 
-        let doneItem: Record<string, unknown>;
-        if (outputItem.type === "message") {
+        const doneItems: Record<string, unknown>[] = [];
+        if (mode === "text") {
+          if (!outputItem) throw new Error("DeepSeek stream ended without output.");
           const content = { type: "output_text", annotations: [], text };
-          doneItem = { ...outputItem, status: "completed", content: [content] };
+          const doneItem = { ...outputItem, status: "completed", content: [content] };
+          doneItems.push(doneItem);
           controller.enqueue(
             eventBytes({
               type: "response.output_text.done",
@@ -273,30 +290,45 @@ export function responsesStream(
             }),
           );
         } else {
-          doneItem = { ...outputItem, status: "completed", arguments: toolArguments };
+          for (const state of [...toolStates.values()].sort(
+            (left, right) => left.outputIndex - right.outputIndex,
+          )) {
+            const doneItem = { ...state.item, status: "completed", arguments: state.arguments };
+            doneItems.push(doneItem);
+            controller.enqueue(
+              eventBytes({
+                type: "response.function_call_arguments.done",
+                sequence_number: sequence++,
+                item_id: state.itemId,
+                output_index: state.outputIndex,
+                arguments: state.arguments,
+              }),
+            );
+            controller.enqueue(
+              eventBytes({
+                type: "response.output_item.done",
+                sequence_number: sequence++,
+                output_index: state.outputIndex,
+                item: doneItem,
+              }),
+            );
+          }
+        }
+        if (mode === "text") {
           controller.enqueue(
             eventBytes({
-              type: "response.function_call_arguments.done",
+              type: "response.output_item.done",
               sequence_number: sequence++,
-              item_id: toolItemId,
               output_index: 0,
-              arguments: toolArguments,
+              item: doneItems[0],
             }),
           );
         }
         controller.enqueue(
           eventBytes({
-            type: "response.output_item.done",
-            sequence_number: sequence++,
-            output_index: 0,
-            item: doneItem,
-          }),
-        );
-        controller.enqueue(
-          eventBytes({
             type: "response.completed",
             sequence_number: sequence++,
-            response: responseState(responseId, model, "completed", [doneItem], usageObject(usage)),
+            response: responseState(responseId, model, "completed", doneItems, usageObject(usage)),
           }),
         );
       },
