@@ -143,6 +143,29 @@ describe("route", () => {
     expect(await errorCode(response)).toBe("invalid_request");
   });
 
+  it("accepts inactive non-function tool declarations without forwarding them", async () => {
+    const upstream = vi.mocked(fetch);
+    const response = await route(
+      responsesRequest({
+        model: "deepseek-codex",
+        stream: true,
+        input: "hello",
+        tools: [
+          { type: "function", name: "lookup", parameters: { type: "object" } },
+          { type: "web_search" },
+        ],
+        tool_choice: "auto",
+        parallel_tool_calls: false,
+      }),
+      env,
+      () => {},
+    );
+    expect(response.status).toBe(200);
+    const body = JSON.parse(upstream.mock.calls.at(-1)![1]!.body as string) as { tools: unknown[] };
+    expect(body.tools).toHaveLength(1);
+    expect(body.tools[0]).toMatchObject({ type: "function", function: { name: "lookup" } });
+  });
+
   it("rejects a model outside the configured alias", async () => {
     const response = await route(
       responsesRequest({ model: "deepseek-v4-pro", stream: true, input: "hello" }),

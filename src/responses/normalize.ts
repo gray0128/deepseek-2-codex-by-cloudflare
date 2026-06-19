@@ -4,6 +4,14 @@ import type { NormalizedMessage, NormalizedTurn } from "./types";
 
 const encoder = new TextEncoder();
 
+type FunctionTool = NormalizedTurn["tools"][number];
+
+function isFunctionTool(
+  tool: NonNullable<ResponsesRequest["tools"]>[number],
+): tool is FunctionTool {
+  return tool.type === "function" && "name" in tool && "parameters" in tool;
+}
+
 function normalizeContent(content: string | Array<{ type: "input_text"; text: string }>): string {
   return typeof content === "string" ? content : content.map((part) => part.text).join("");
 }
@@ -61,7 +69,7 @@ export async function normalizeRequest(
     modelAlias: request.model,
     inputMessages,
     declaredTools: (request.tools?.length ?? 0) > 0,
-    tools: request.tools ?? [],
+    tools: (request.tools ?? []).filter(isFunctionTool),
     parallelToolCalls: request.parallel_tool_calls ?? false,
     reasoningEffort: request.reasoning?.effort ?? "none",
   } satisfies Omit<NormalizedTurn, "requestFingerprint">;
