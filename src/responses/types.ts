@@ -9,6 +9,12 @@ export interface NormalizedTurn {
   modelAlias: string;
   inputMessages: NormalizedMessage[];
   declaredTools: boolean;
+  tools: Array<{
+    type: "function";
+    name: string;
+    description?: string;
+    parameters: Record<string, unknown>;
+  }>;
   parallelToolCalls: boolean;
   reasoningEffort: ReasoningEffort;
   requestFingerprint: string;

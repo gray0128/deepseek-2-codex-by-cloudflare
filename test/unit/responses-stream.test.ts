@@ -96,4 +96,60 @@ describe("Responses text stream", () => {
     );
     expect(partial).not.toContain("response.completed");
   });
+
+  it("streams function call arguments and keeps item id separate from call id", async () => {
+    const upstream = [
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_deepseek","function":{"name":"exec_command","arguments":"{\\\"cmd"}}]}}]}',
+      "",
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\\\":\\\"printf hi\\\"}"}}]}}]}',
+      "",
+      "data: [DONE]",
+      "",
+      "",
+    ].join("\n");
+    const result = await events(responsesStream(chunked(upstream, [2, 4, 1, 7]), "deepseek-codex"));
+    const added = result.find((event) => event.type === "response.output_item.added")!;
+    const done = result.find((event) => event.type === "response.output_item.done")!;
+
+    expect(result.map((event) => event.type)).toEqual([
+      "response.created",
+      "response.output_item.added",
+      "response.function_call_arguments.delta",
+      "response.function_call_arguments.delta",
+      "response.function_call_arguments.done",
+      "response.output_item.done",
+      "response.completed",
+    ]);
+    expect(added).toMatchObject({
+      item: {
+        type: "function_call",
+        status: "in_progress",
+        call_id: "call_deepseek",
+        name: "exec_command",
+      },
+    });
+    expect((added.item as { id: string }).id).not.toBe("call_deepseek");
+    expect(done).toMatchObject({
+      item: {
+        type: "function_call",
+        status: "completed",
+        call_id: "call_deepseek",
+        arguments: '{"cmd":"printf hi"}',
+      },
+    });
+  });
+
+  it("rejects parallel tool indexes", async () => {
+    await expect(
+      new Response(
+        responsesStream(
+          chunked(
+            'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","function":{"name":"b","arguments":"{}"}}]}}]}\n\ndata: [DONE]\n\n',
+            [3],
+          ),
+          "deepseek-codex",
+        ),
+      ).text(),
+    ).rejects.toThrow();
+  });
 });

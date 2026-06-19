@@ -61,6 +61,7 @@ export async function normalizeRequest(
     modelAlias: request.model,
     inputMessages,
     declaredTools: (request.tools?.length ?? 0) > 0,
+    tools: request.tools ?? [],
     parallelToolCalls: request.parallel_tool_calls ?? false,
     reasoningEffort: request.reasoning?.effort ?? "none",
   } satisfies Omit<NormalizedTurn, "requestFingerprint">;
