@@ -60,7 +60,7 @@ export const responsesRequestSchema = z
       .optional(),
     tools: z.array(declaredToolSchema).max(MAX_TOOLS).optional(),
     tool_choice: z.literal("auto").optional(),
-    parallel_tool_calls: z.literal(false).optional(),
+    parallel_tool_calls: z.boolean().optional(),
     include: z.array(z.literal("reasoning.encrypted_content")).max(1).optional(),
     store: z.literal(false).optional(),
     prompt_cache_key: z.string().optional(),

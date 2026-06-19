@@ -139,18 +139,27 @@ describe("Responses text stream", () => {
     });
   });
 
-  it("rejects parallel tool indexes", async () => {
-    await expect(
-      new Response(
-        responsesStream(
-          chunked(
-            'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","function":{"name":"b","arguments":"{}"}}]}}]}\n\ndata: [DONE]\n\n',
-            [3],
-          ),
-          "deepseek-codex",
-        ),
-      ).text(),
-    ).rejects.toThrow();
+  it("keeps interleaved parallel tool arguments associated by index", async () => {
+    const upstream = [
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":1,"id":"call_b","function":{"name":"b","arguments":"{\\\"b"}},{"index":0,"id":"call_a","function":{"name":"a","arguments":"{\\\"a"}}]}}]}',
+      "",
+      'data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\\\":1}"}},{"index":1,"function":{"arguments":"\\\":2}"}}]}}]}',
+      "",
+      "data: [DONE]",
+      "",
+      "",
+    ].join("\n");
+    const result = await events(responsesStream(chunked(upstream, [3, 1, 8]), "deepseek-codex"));
+    const doneItems = result.filter((event) => event.type === "response.output_item.done");
+    expect(doneItems).toHaveLength(2);
+    expect(doneItems[0]).toMatchObject({
+      output_index: 0,
+      item: { call_id: "call_a", name: "a", arguments: '{"a":1}' },
+    });
+    expect(doneItems[1]).toMatchObject({
+      output_index: 1,
+      item: { call_id: "call_b", name: "b", arguments: '{"b":2}' },
+    });
   });
 
   it("does not expose DeepSeek reasoning_content as output text", async () => {

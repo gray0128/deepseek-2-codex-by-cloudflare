@@ -25,5 +25,5 @@ export interface DeepSeekRequest {
     };
   }>;
   tool_choice?: "auto";
-  parallel_tool_calls?: false;
+  parallel_tool_calls?: boolean;
 }
