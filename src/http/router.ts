@@ -15,6 +15,7 @@ export interface SafeLogRecord {
   path: string;
   status: number;
   code: string;
+  duration_ms: number;
 }
 
 export type SafeLogger = (record: SafeLogRecord) => void;
@@ -141,6 +142,7 @@ export async function route(
   env?: RuntimeEnv,
   logger: SafeLogger = defaultLogger,
 ): Promise<Response> {
+  const startedAt = Date.now();
   const id = requestId(request);
   const url = new URL(request.url);
   let response: Response;
@@ -185,6 +187,7 @@ export async function route(
     path: url.pathname,
     status: response.status,
     code,
+    duration_ms: Date.now() - startedAt,
   });
   return response;
 }
