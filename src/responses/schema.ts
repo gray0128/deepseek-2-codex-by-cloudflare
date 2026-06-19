@@ -15,6 +15,23 @@ const messageSchema = z
     content: z.union([z.string(), z.array(inputTextSchema)]),
   })
   .strict();
+const functionCallSchema = z
+  .object({
+    type: z.literal("function_call"),
+    id: z.string().min(1),
+    call_id: z.string().min(1),
+    name: z.string().min(1),
+    arguments: z.string(),
+  })
+  .strict();
+const functionCallOutputSchema = z
+  .object({
+    type: z.literal("function_call_output"),
+    call_id: z.string().min(1),
+    output: z.string(),
+  })
+  .strict();
+const inputItemSchema = z.union([messageSchema, functionCallSchema, functionCallOutputSchema]);
 
 const functionToolSchema = z
   .object({
@@ -34,7 +51,7 @@ export const responsesRequestSchema = z
   .object({
     model: z.string().min(1),
     stream: z.literal(true),
-    input: z.union([z.string(), z.array(messageSchema).max(MAX_INPUT_ITEMS)]),
+    input: z.union([z.string(), z.array(inputItemSchema).max(MAX_INPUT_ITEMS)]),
     instructions: z.string().nullable().optional(),
     reasoning: z
       .object({ effort: z.enum(["none", "low", "medium", "high", "xhigh"]) })
