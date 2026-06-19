@@ -189,6 +189,11 @@ normalizer 的责任：
 
 normalizer 不做模型选择、历史恢复或 SSE 输出。
 
+MVP-A 兼容固定 Codex 客户端默认附带的声明型 tools：只校验数组上限并记录
+`declaredTools=true`，文本 request builder 不转发它们，`/v1/models` 明确标记
+`tools=false`。除 `tool_choice=auto` 外的工具选择和任何工具输入 item 仍返回 400；T05
+启用 function tool 结构化转换后移除此兼容降级。
+
 ### 6.4 模型策略
 
 Codex 只使用别名 `deepseek-codex`。`model-policy.ts` 根据能力探测结果选择上游模型：
