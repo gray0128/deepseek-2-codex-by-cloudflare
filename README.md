@@ -2,11 +2,14 @@
 
 使用 Cloudflare Worker 将 Codex Responses API 请求适配到 DeepSeek Chat Completions。
 
-当前仓库已建立 Cloudflare Worker 与测试基线；Responses 协议实现从 T02 开始。目标范围、技术实现和任务进度分别由以下文档管理：
+当前实现已覆盖 MVP-C：流式文本、客户端 function tools、连续工具回合、thinking 请求、
+并行 tool call 流解析、取消传播、错误映射、回滚和生产 smoke。
+目标范围、技术实现和任务进度分别由以下文档管理：
 
 - [最终实施方案](./docs/最终方案.md)：项目范围、阶段和关键决策；
 - [MVP-C 技术设计](./docs/MVP-C技术设计.md)：模块、接口、状态机、数据模型和测试方案；
 - [开发路线图与 Issue 索引](./docs/开发路线图.md)：任务依赖、验收标准和 GitHub issues；
+- [MVP-C 运维记录](./docs/operations.md)：部署、secrets、Codex 配置、E2E 证据和回滚；
 - [历史方案与评审归档](./docs/archive/)：只用于追溯，不作为实现依据。
 
 ## 本地开发
@@ -25,15 +28,25 @@ npm run dev
 curl http://127.0.0.1:8787/healthz
 ```
 
-当前生产入口只提供 `/healthz` 和结构化 404；鉴权、Responses schema 与 DeepSeek
-client 属于后续 issue，不在脚手架中放置占位实现。
+生产 Worker 提供：
+
+- `GET /healthz`
+- `GET /v1/models`
+- `POST /v1/responses`
+
+必需 secrets：
+
+- `DEEPSEEK_API_KEY`
+- `ADAPTER_BEARER_TOKEN`
+- `RESPONSE_ID_SECRET`
+
+Codex provider 配置和生产验收结果见 [docs/operations.md](./docs/operations.md)。
 
 ## 开发进度
 
 - [MVP-C milestone](https://github.com/gray0128/deepseek-2-codex-by-cloudflare/milestone/1)
 - [MVP-C Epic #1](https://github.com/gray0128/deepseek-2-codex-by-cloudflare/issues/1)
-- [设计基线 Issue #2](https://github.com/gray0128/deepseek-2-codex-by-cloudflare/issues/2)
-- [设计基线 Draft PR #14](https://github.com/gray0128/deepseek-2-codex-by-cloudflare/pull/14)
+- [生产 Worker](https://deepseek-codex-adapter.amd2.workers.dev/healthz)
 
 Epic 是总体进度入口；`docs/开发路线图.md` 是任务依赖和验收定义的仓库内镜像。两者不一致时，先修正 issue，再同步路线图。
 
