@@ -16,7 +16,15 @@ const messageSchema = z
   })
   .strict();
 
-const declaredToolSchema = z.object({ type: z.string().min(1) }).passthrough();
+const functionToolSchema = z
+  .object({
+    type: z.literal("function"),
+    name: z.string().min(1),
+    description: z.string().optional(),
+    parameters: z.record(z.string(), z.unknown()),
+    strict: z.literal(false).optional(),
+  })
+  .strict();
 
 export const responsesRequestSchema = z
   .object({
@@ -29,9 +37,9 @@ export const responsesRequestSchema = z
       .strict()
       .nullable()
       .optional(),
-    tools: z.array(declaredToolSchema).max(MAX_TOOLS).optional(),
+    tools: z.array(functionToolSchema).max(MAX_TOOLS).optional(),
     tool_choice: z.literal("auto").optional(),
-    parallel_tool_calls: z.boolean().optional(),
+    parallel_tool_calls: z.literal(false).optional(),
     include: z.array(z.literal("reasoning.encrypted_content")).max(1).optional(),
     store: z.literal(false).optional(),
     prompt_cache_key: z.string().optional(),

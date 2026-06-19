@@ -15,6 +15,7 @@ function turn(reasoningEffort: ReasoningEffort): NormalizedTurn {
     modelAlias: "deepseek-codex",
     inputMessages: [{ role: "user", content: "hello" }],
     declaredTools: false,
+    tools: [],
     parallelToolCalls: false,
     reasoningEffort,
     requestFingerprint: "fingerprint",
@@ -33,5 +34,33 @@ describe("DeepSeek request policy", () => {
     expect(result).toMatchObject({ model, thinking: { type: thinking } });
     expect(result.reasoning_effort).toBe(reasoning);
     expect(result).not.toHaveProperty("tools");
+  });
+
+  it("maps function tools to DeepSeek without executing them", () => {
+    const normalized = {
+      ...turn("none"),
+      declaredTools: true,
+      tools: [
+        {
+          type: "function" as const,
+          name: "exec_command",
+          description: "Run a command.",
+          parameters: { type: "object", properties: { cmd: { type: "string" } } },
+        },
+      ],
+    };
+    const result = buildDeepSeekRequest(normalized, decideModel(normalized, config));
+    expect(result.tools).toEqual([
+      {
+        type: "function",
+        function: {
+          name: "exec_command",
+          description: "Run a command.",
+          parameters: { type: "object", properties: { cmd: { type: "string" } } },
+        },
+      },
+    ]);
+    expect(result.tool_choice).toBe("auto");
+    expect(result.parallel_tool_calls).toBe(false);
   });
 });

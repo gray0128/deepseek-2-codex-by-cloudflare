@@ -10,4 +10,14 @@ export interface DeepSeekRequest {
   stream_options: { include_usage: true };
   thinking: { type: "enabled" | "disabled" };
   reasoning_effort?: "high" | "max";
+  tools?: Array<{
+    type: "function";
+    function: {
+      name: string;
+      description?: string;
+      parameters: Record<string, unknown>;
+    };
+  }>;
+  tool_choice?: "auto";
+  parallel_tool_calls?: false;
 }

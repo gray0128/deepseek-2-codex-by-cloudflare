@@ -115,15 +115,32 @@ describe("route", () => {
         model: "deepseek-codex",
         stream: true,
         input: "hello",
-        tools: [{ type: "function", name: "lookup" }],
+        tools: [{ type: "function", name: "lookup", parameters: { type: "object" } }],
         tool_choice: "auto",
-        parallel_tool_calls: true,
+        parallel_tool_calls: false,
       }),
       env,
       () => {},
     );
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("response.completed");
+  });
+
+  it("rejects parallel tool calls until MVP-B proves the mapping", async () => {
+    const response = await route(
+      responsesRequest({
+        model: "deepseek-codex",
+        stream: true,
+        input: "hello",
+        tools: [{ type: "function", name: "lookup", parameters: { type: "object" } }],
+        tool_choice: "auto",
+        parallel_tool_calls: true,
+      }),
+      env,
+      () => {},
+    );
+    expect(response.status).toBe(400);
+    expect(await errorCode(response)).toBe("invalid_request");
   });
 
   it("rejects a model outside the configured alias", async () => {
