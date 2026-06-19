@@ -28,6 +28,18 @@ function assertMessageSize(content: string, maxBytes: number, path: string): voi
   }
 }
 
+function assertValidToolOutputOrder(callIds: Set<string>, callId: string, path: string): void {
+  if (!callIds.has(callId)) {
+    throw new AdapterError(
+      400,
+      "unknown_tool_call",
+      "Function call output does not match a known function call.",
+      "invalid_request_error",
+      path,
+    );
+  }
+}
+
 async function fingerprint(value: unknown): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", encoder.encode(JSON.stringify(value)));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -47,10 +59,42 @@ export async function normalizeRequest(
     assertMessageSize(request.input, messageMaxBytes, "input");
     inputMessages.push({ role: "user", content: request.input });
   } else {
-    request.input.forEach((message, index) => {
-      const content = normalizeContent(message.content);
+    const seenCallIds = new Set<string>();
+    request.input.forEach((item, index) => {
+      if (item.type === "function_call") {
+        if (seenCallIds.has(item.call_id)) {
+          throw new AdapterError(
+            400,
+            "duplicate_tool_call",
+            "Function call id was repeated.",
+            "invalid_request_error",
+            `input.${index}.call_id`,
+          );
+        }
+        seenCallIds.add(item.call_id);
+        assertMessageSize(item.arguments, messageMaxBytes, `input.${index}.arguments`);
+        inputMessages.push({
+          role: "assistant",
+          tool_calls: [
+            {
+              id: item.call_id,
+              type: "function",
+              function: { name: item.name, arguments: item.arguments },
+            },
+          ],
+        });
+        return;
+      }
+      if (item.type === "function_call_output") {
+        assertValidToolOutputOrder(seenCallIds, item.call_id, `input.${index}.call_id`);
+        assertMessageSize(item.output, messageMaxBytes, `input.${index}.output`);
+        inputMessages.push({ role: "tool", tool_call_id: item.call_id, content: item.output });
+        return;
+      }
+
+      const content = normalizeContent(item.content);
       assertMessageSize(content, messageMaxBytes, `input.${index}.content`);
-      const role = message.role === "developer" ? "system" : message.role;
+      const role = item.role === "developer" ? "system" : item.role;
       inputMessages.push({ role, content });
     });
   }
