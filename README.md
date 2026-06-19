@@ -4,6 +4,74 @@
 
 当前实现已覆盖 MVP-C：流式文本、客户端 function tools、连续工具回合、thinking 请求、
 并行 tool call 流解析、取消传播、错误映射、回滚和生产 smoke。
+
+## 使用场景
+
+适合：
+
+- 在 Codex Desktop 或 Codex CLI 中，通过自定义 Responses provider 使用 DeepSeek 模型；
+- 在 Cloudflare Workers 上部署轻量协议适配层，将 Codex 的 Responses 请求转换为 DeepSeek Chat Completions；
+- 需要流式文本、客户端 function tools、连续或并行工具调用，以及 thinking 请求的内部开发环境。
+
+当前不适合：
+
+- OpenAI Responses API 的通用替代服务；
+- `stream=false`、多模态输入、服务端内置工具或 reasoning item 透传；
+- 需要向客户端暴露 DeepSeek `reasoning_content` 的场景。
+
+## 使用方法
+
+### 接入现有 Worker
+
+设置一个与 Worker `ADAPTER_BEARER_TOKEN` 相同的本地环境变量：
+
+```sh
+export CODEX_GATEWAY_API_KEY='<adapter-bearer-token>'
+```
+
+在 Codex 的 `config.toml` 中添加 provider，并将其设为当前模型：
+
+```toml
+model = "deepseek-codex"
+model_provider = "cf_deepseek_adapter"
+
+[model_providers.cf_deepseek_adapter]
+name = "Cloudflare DeepSeek Responses Adapter"
+base_url = "https://deepseek-codex-adapter.amd2.workers.dev/v1"
+env_key = "CODEX_GATEWAY_API_KEY"
+wire_api = "responses"
+stream_max_retries = 0
+supports_websockets = false
+```
+
+完成配置后即可正常启动 Codex。可先检查服务是否在线：
+
+```sh
+curl -fsS https://deepseek-codex-adapter.amd2.workers.dev/healthz
+```
+
+### 自行部署
+
+要求 Node.js 22+ 和可用的 Cloudflare 账号。安装依赖、写入 secrets 并部署：
+
+```sh
+npm ci
+npx wrangler secret put DEEPSEEK_API_KEY
+npx wrangler secret put ADAPTER_BEARER_TOKEN
+npx wrangler secret put RESPONSE_ID_SECRET
+npm run deploy
+```
+
+`ADAPTER_BEARER_TOKEN` 和 `RESPONSE_ID_SECRET` 均至少使用 16 个字符。部署后，将上方
+Codex 配置中的 `base_url` 替换为你的 Worker 地址并保留 `/v1` 后缀；
+`CODEX_GATEWAY_API_KEY` 必须与部署时写入的 `ADAPTER_BEARER_TOKEN` 相同。
+
+服务端点：
+
+- `GET /healthz`：存活检查，不验证 DeepSeek 或 Durable Object；
+- `GET /v1/models`：查询可用模型，需要 Bearer token；
+- `POST /v1/responses`：流式 Responses 适配入口，需要 Bearer token。
+
 目标范围、技术实现和任务进度分别由以下文档管理：
 
 - [最终实施方案](./docs/最终方案.md)：项目范围、阶段和关键决策；
@@ -49,43 +117,3 @@ Codex provider 配置和生产验收结果见 [docs/operations.md](./docs/operat
 - [生产 Worker](https://deepseek-codex-adapter.amd2.workers.dev/healthz)
 
 Epic 是总体进度入口；`docs/开发路线图.md` 是任务依赖和验收定义的仓库内镜像。两者不一致时，先修正 issue，再同步路线图。
-
-## Issue 流程
-
-1. **先查重和依赖**
-   - 在 [Epic #1](https://github.com/gray0128/deepseek-2-codex-by-cloudflare/issues/1) 和 [开发路线图](./docs/开发路线图.md) 中确认任务尚未存在。
-   - 检查 `Blocked by #...`；依赖未关闭时不开始占位实现。
-2. **冻结任务范围**
-   - issue 必须写清目标、交付物、验收标准和依赖。
-   - 使用 `phase:discovery`、`phase:foundation`、`phase:mvp-a`、`phase:mvp-b`、`phase:mvp-c` 或 `phase:release` 标记阶段。
-   - 所有 MVP-C 任务加入 `MVP-C` milestone，并分配明确负责人。
-3. **开始开发**
-   - 从最新 `main` 创建 `codex/issue-<number>-<short-name>` 分支。
-   - 在 issue 中记录实施计划；发现范围变化时先更新 issue 和活动文档。
-4. **保持进度可见**
-   - 阻塞、外部契约结论和验收证据写回 issue，不只保留在本地或 PR 对话中。
-   - 新增任务必须加入 Epic checklist 和路线图索引。
-
-## PR 流程
-
-1. **一个 issue 对应一个 PR**
-   - 除 Epic 外，每个 issue 原则上由一个 PR 关闭；不要把无关任务混入同一 PR。
-   - PR 标题概括实际变更，正文使用 `Closes #<number>` 关联 issue。
-2. **尽早创建 Draft PR**
-   - 首个可评审提交推送后创建 Draft PR，持续在同一分支更新。
-   - PR 必须填写 `.github/pull_request_template.md` 中的范围、不变量、验证和回滚信息。
-3. **提交验证证据**
-   - 列出实际执行的 typecheck、test、fixture 和真实 Codex E2E 命令及结果。
-   - 协议变化必须更新对应 fixture；DO schema、secret、compatibility date 变化必须单独说明。
-   - 禁止把 prompt、tool output、reasoning 或 secret 放入日志、fixture 或 PR 内容。
-4. **转为 Ready for review**
-   - issue 验收项全部有证据、依赖已关闭、CI 通过后才能取消 Draft。
-   - 评审意见必须在原 PR 处理；不以新 PR 绕过未解决评论。
-5. **合并与收尾**
-   - 只合并当前 head 已通过 CI 和评审的 PR。
-   - 合并后确认 `Closes` 已关闭 issue，并同步 Epic checklist、路线图和相关活动文档。
-   - 若实现与技术设计不同，必须在同一 PR 中记录决策和更新文档。
-
-## 活动文档规则
-
-`docs/` 根目录只保留当前实施需要的文档。被新决策替代的方案、挑战报告和评审记录移动到 `docs/archive/`，并修正活动文档中的引用；归档内容不再用于指导实现。
