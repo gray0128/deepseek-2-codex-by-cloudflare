@@ -8,7 +8,7 @@
     "MODEL_ALIAS": "deepseek-codex",
     "UPSTREAM_BASE_URL": "https://api.deepseek.com",
     "UPSTREAM_TEXT_MODEL": "deepseek-v4-flash",
-    "UPSTREAM_REASONING_MODEL": "deepseek-v4-flash",
+    "UPSTREAM_REASONING_MODEL": "deepseek-v4-pro",
     "REQUEST_MAX_BYTES": 1048576,
     "MESSAGE_MAX_BYTES": 262144,
     "FIRST_BYTE_TIMEOUT_MS": 10000,

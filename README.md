@@ -37,7 +37,7 @@ model_provider = "cf_deepseek_adapter"
 
 [model_providers.cf_deepseek_adapter]
 name = "Cloudflare DeepSeek Responses Adapter"
-base_url = "https://deepseek-codex-adapter.amd2.workers.dev/v1"
+base_url = "https://codex.bobocai.win/v1"
 env_key = "CODEX_GATEWAY_API_KEY"
 wire_api = "responses"
 stream_max_retries = 0
@@ -47,7 +47,7 @@ supports_websockets = false
 完成配置后即可正常启动 Codex。可先检查服务是否在线：
 
 ```sh
-curl -fsS https://deepseek-codex-adapter.amd2.workers.dev/healthz
+curl -fsS https://codex.bobocai.win/healthz
 ```
 
 ### 自行部署
@@ -114,6 +114,6 @@ Codex provider 配置和生产验收结果见 [docs/operations.md](./docs/operat
 
 - [MVP-C milestone](https://github.com/gray0128/deepseek-2-codex-by-cloudflare/milestone/1)
 - [MVP-C Epic #1](https://github.com/gray0128/deepseek-2-codex-by-cloudflare/issues/1)
-- [生产 Worker](https://deepseek-codex-adapter.amd2.workers.dev/healthz)
+- [生产 Worker](https://codex.bobocai.win/healthz)
 
 Epic 是总体进度入口；`docs/开发路线图.md` 是任务依赖和验收定义的仓库内镜像。两者不一致时，先修正 issue，再同步路线图。
